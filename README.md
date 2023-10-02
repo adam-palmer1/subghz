@@ -9,11 +9,11 @@ Using the Sub-GHz RAW capture feature, I can capture a signal from the remote an
 
 After capturing the RAW signal for the light on/off button, I upload the file to https://lab.flipp.dev/pulse-plotter so that I can visualize it.
 
-We see a series of 30 pulses for each button press, of two separate sizes short pulses (representing 0) and long pulses (representing 1). 
+We see a series of 30 pulses for each button press, of two separate sizes. The short pulses represent 0 and the long pulses represent 1. 
 
-The short pulses are on for roughly 380us and off for 1080us. The long pulses are reversed - on for roughly 380us and off for roughly 1080us. 
+The short pulses are on for roughly 380us and off for 1080us. The long pulses are reversed.
 
-We see a short pulse (380us) followed by roughly 5130us of silence before the command is issued.
+First, we see a short pulse (380us) followed by roughly 5130us of silence before the command is issued.
 
 As there's only 30 pulses for a button press, we can write out the bitstream manually: `111000011011111001110101101010`
 
@@ -48,7 +48,7 @@ I've now inserted a second gap in the bitstream that shows the part that's chang
 
 We now know that the first 8 bits seems to be fixed and is a preamble, the next 12 bits represents the unit ID and the last 10 bits represents the command.
 
-12 bits representing the unit ID give us a total of 2^12 = 4096 different unit IDs which is easily brute-forceable.
+12 bits representing the unit ID give us a total of 2^12 = 4096 different unit IDs which is easily brute-forceable within a reasonable timeframe.
 
 Let's write a python script to brute force the light button and produce 4096 separate bit streams for the light command, one for each unit ID. We'll batch them into 256 per file, and also create a playlist file of them all that can be used with the Sub-GHz Playlist app:
 
@@ -87,8 +87,8 @@ Frequency: 433920000
 Preset: FuriHalSubGhzPresetOok270Async
 Protocol: RAW
 """
-str_output = ""
 
+str_output = ""
 
 fh_subfile = None
 for i in range(pow(2, id_bits)):
@@ -104,8 +104,8 @@ for i in range(pow(2, id_bits)):
         fh_subfile.write(header)
 
     bits = bin(int(str(i), base=10)).split("b")[1]
-    padlen = id_bits - len(bits)
-    unit_id = ("0"*padlen) + bits
+    pad = "0" * (id_bits - len(bits))
+    unit_id = pad + bits
     s = preamble #fixed
     s += unit_id #device 12-bit
     s += cmd
@@ -128,4 +128,4 @@ fh_playlist.close()
 
 We can now bruteforce the entire 4096 space by playing the full playlist within roughly 4 minutes.
 
-You can also create two sets of data for each command as I have done - a set of 16 sub files each containing 256 commands as well as a set of 64 sub files each containing 32 commands. Once you've narrowed down the unit ID using the 16 sub files containing 256 commands each, you can then narrow it down further. It takes 15 seconds to play a sub file containing 256 commands, and it takes 2.4 seconds to play a sub file containing 32 commands.
+You can also create two sets of data for each command. I created a set of 16 sub files each containing 256 commands as well as a set of 64 sub files each containing 32 commands. Once you've narrowed down the unit ID using the 16 sub files containing 256 commands each, you can then narrow it down further. It takes 15 seconds to play a sub file containing 256 commands, and it takes 2.4 seconds to play a sub file containing 32 commands.
